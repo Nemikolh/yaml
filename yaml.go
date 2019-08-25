@@ -153,6 +153,26 @@ func (n *Node) Decode(v interface{}) (err error) {
 	return nil
 }
 
+// DecodeKnownFields decodes the node and stores its data into the value pointed to by v.
+// Set the KnownFields flag to true.
+//
+// See the documentation for Unmarshal for details about the
+// conversion of YAML into a Go value.
+func (n *Node) DecodeKnownFields(v interface{}) (err error) {
+	d := newDecoder()
+	d.knownFields = true
+	defer handleErr(&err)
+	out := reflect.ValueOf(v)
+	if out.Kind() == reflect.Ptr && !out.IsNil() {
+		out = out.Elem()
+	}
+	d.unmarshal(n, out)
+	if len(d.terrors) > 0 {
+		return &TypeError{d.terrors}
+	}
+	return nil
+}
+
 func unmarshal(in []byte, out interface{}, strict bool) (err error) {
 	defer handleErr(&err)
 	d := newDecoder()
@@ -339,7 +359,7 @@ const (
 //             Address yaml.Node
 //     }
 //     err := yaml.Unmarshal(data, &person)
-// 
+//
 // Or by itself:
 //
 //     var person Node
@@ -349,7 +369,7 @@ type Node struct {
 	// Kind defines whether the node is a document, a mapping, a sequence,
 	// a scalar value, or an alias to another node. The specific data type of
 	// scalar nodes may be obtained via the ShortTag and LongTag methods.
-	Kind  Kind
+	Kind Kind
 
 	// Style allows customizing the apperance of the node in the tree.
 	Style Style
